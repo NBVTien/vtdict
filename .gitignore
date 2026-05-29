@@ -1,0 +1,25 @@
+# binary
+vtdict
+
+# build artifacts
+dist/
+*.exe
+*.test
+
+# Go
+*.out
+vendor/
+
+# env / secrets
+.env
+.env.local
+
+# OS
+.DS_Store
+Thumbs.db
+
+# editor
+.idea/
+.vscode/
+*.swp
+*.swo
