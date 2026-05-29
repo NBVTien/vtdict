@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"encoding/json"
 	"fmt"
 	"os"
 
@@ -43,8 +44,18 @@ func lookupWord(word string) error {
 
 	// check SQLite cache first
 	if cached, err := storage.Get(word); err == nil && cached != nil {
-		if err := storage.Save(word, cached.Definition, cached.Translation); err != nil {
-			fmt.Fprintf(os.Stderr, "warn: could not update history: %v\n", err)
+		storage.Save(word, cached.Definition, cached.Translation, cached.Raw)
+		if cached.Raw != "" {
+			var results []dictionary.Result
+			if jsonErr := json.Unmarshal([]byte(cached.Raw), &results); jsonErr == nil && len(results) > 0 {
+				ui.RenderLookup(results, cached.Translation, opts)
+				return nil
+			}
+			var def ai.Definition
+			if jsonErr := json.Unmarshal([]byte(cached.Raw), &def); jsonErr == nil && def.Word != "" {
+				ui.RenderAILookup(&def, cached.Translation, opts)
+				return nil
+			}
 		}
 		ui.RenderCached(cached.Definition, cached.Translation, opts)
 		return nil
@@ -65,7 +76,8 @@ func lookupWord(word string) error {
 				translation, _ = translate.Translate(def.Definition, lang)
 			}
 			ui.RenderAILookup(def, translation, opts)
-			if err := storage.Save(word, def.Definition, translation); err != nil {
+			rawBytes, _ := json.Marshal(def)
+			if err := storage.Save(word, def.Definition, translation, string(rawBytes)); err != nil {
 				fmt.Fprintf(os.Stderr, "warn: could not save to history: %v\n", err)
 			}
 			return nil
@@ -89,7 +101,8 @@ func lookupWord(word string) error {
 	ui.RenderLookup(results, translation, opts)
 
 	firstDef := dictionary.FirstDefinition(results)
-	if err := storage.Save(word, firstDef, translation); err != nil {
+	rawBytes, _ := json.Marshal(results)
+	if err := storage.Save(word, firstDef, translation, string(rawBytes)); err != nil {
 		fmt.Fprintf(os.Stderr, "warn: could not save to history: %v\n", err)
 	}
 

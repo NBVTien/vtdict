@@ -12,6 +12,7 @@ type Entry struct {
 	Word        string
 	Definition  string
 	Translation string
+	Raw         string
 	LookupCount int
 	LastLookedUp time.Time
 }
@@ -36,27 +37,34 @@ func Init() error {
 		lookup_count INTEGER DEFAULT 1,
 		last_looked_up DATETIME DEFAULT CURRENT_TIMESTAMP
 	)`)
-	return err
+	if err != nil {
+		return err
+	}
+
+	// migrate: add raw column if not present
+	_, _ = db.Exec(`ALTER TABLE history ADD COLUMN raw TEXT DEFAULT ''`)
+	return nil
 }
 
-func Save(word, definition, translation string) error {
-	_, err := db.Exec(`INSERT INTO history (word, definition, translation, lookup_count, last_looked_up)
-		VALUES (?, ?, ?, 1, CURRENT_TIMESTAMP)
+func Save(word, definition, translation, raw string) error {
+	_, err := db.Exec(`INSERT INTO history (word, definition, translation, raw, lookup_count, last_looked_up)
+		VALUES (?, ?, ?, ?, 1, CURRENT_TIMESTAMP)
 		ON CONFLICT(word) DO UPDATE SET
 			definition = excluded.definition,
 			translation = excluded.translation,
+			raw = excluded.raw,
 			lookup_count = lookup_count + 1,
 			last_looked_up = CURRENT_TIMESTAMP`,
-		word, definition, translation)
+		word, definition, translation, raw)
 	return err
 }
 
 func Get(word string) (*Entry, error) {
 	var e Entry
 	var ts string
-	err := db.QueryRow(`SELECT word, definition, translation, lookup_count,
+	err := db.QueryRow(`SELECT word, definition, translation, raw, lookup_count,
 		datetime(last_looked_up, 'localtime') FROM history WHERE word = ?`, word).
-		Scan(&e.Word, &e.Definition, &e.Translation, &e.LookupCount, &ts)
+		Scan(&e.Word, &e.Definition, &e.Translation, &e.Raw, &e.LookupCount, &ts)
 	if err == sql.ErrNoRows {
 		return nil, nil
 	}
@@ -68,7 +76,7 @@ func Get(word string) (*Entry, error) {
 }
 
 func GetHistory(limit int) ([]Entry, error) {
-	rows, err := db.Query(`SELECT word, definition, translation, lookup_count,
+	rows, err := db.Query(`SELECT word, definition, translation, raw, lookup_count,
 		datetime(last_looked_up, 'localtime') FROM history ORDER BY last_looked_up DESC LIMIT ?`, limit)
 	if err != nil {
 		return nil, err
@@ -79,7 +87,7 @@ func GetHistory(limit int) ([]Entry, error) {
 	for rows.Next() {
 		var e Entry
 		var ts string
-		if err := rows.Scan(&e.Word, &e.Definition, &e.Translation, &e.LookupCount, &ts); err != nil {
+		if err := rows.Scan(&e.Word, &e.Definition, &e.Translation, &e.Raw, &e.LookupCount, &ts); err != nil {
 			continue
 		}
 		e.LastLookedUp, _ = time.Parse("2006-01-02 15:04:05", ts)
