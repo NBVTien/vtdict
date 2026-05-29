@@ -1,6 +1,9 @@
 # binary
 vtdict
 
+# local docs
+docs/
+
 # build artifacts
 dist/
 *.exe

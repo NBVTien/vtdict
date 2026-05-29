@@ -5,12 +5,17 @@ Terminal dictionary with translation. Look up English words, see definitions and
 ## Install
 
 ```bash
-git clone https://github.com/NBVTien/vtdict
-cd vtdict
-./install.sh
+curl -fsSL https://raw.githubusercontent.com/NBVTien/vtdict/main/install.sh | bash
 ```
 
-Requires Go 1.21+. The script installs the binary and warns if `~/go/bin` is not in your `$PATH`.
+No Go required. Downloads the correct binary for your OS and architecture.
+
+**Self-update:**
+```bash
+vtdict update
+```
+
+**Manual:** grab a binary from [releases](https://github.com/NBVTien/vtdict/releases/latest).
 
 ## Usage
 
@@ -32,6 +37,13 @@ vtdict -s config                  # look up the word "config"
 ```
 
 ## Commands
+
+### Other
+
+```bash
+vtdict version   # show current version
+vtdict update    # update to latest release
+```
 
 ### `vtdict log` — history
 
