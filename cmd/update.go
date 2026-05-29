@@ -14,8 +14,9 @@ import (
 const (
 	githubOwner = "NBVTien"
 	githubRepo  = "vtdict"
-	currentVersion = "dev" // replaced by goreleaser at build time via ldflags
 )
+
+var currentVersion = "dev" // replaced by goreleaser at build time via ldflags
 
 type githubRelease struct {
 	TagName string        `json:"tag_name"`
