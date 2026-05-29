@@ -55,8 +55,18 @@ var configSetCmd = &cobra.Command{
 			cfg.Examples = parseBool(val)
 		case "pos":
 			cfg.POS = parseBool(val)
+		case "ai-fallback":
+			cfg.AIFallback = parseBool(val)
+		case "ai-provider":
+			cfg.AIProvider = val
+		case "ai-key":
+			cfg.AIKey = val
+		case "ai-model":
+			cfg.AIModel = val
+		case "ai-base-url":
+			cfg.AIBaseURL = val
 		default:
-			fmt.Fprintf(os.Stderr, "unknown key %q\nvalid keys: lang, translate, phonetic, examples, pos\n", key)
+			fmt.Fprintf(os.Stderr, "unknown key %q\nvalid keys: lang, translate, phonetic, examples, pos, ai-fallback, ai-provider, ai-key, ai-model, ai-base-url\n", key)
 			os.Exit(1)
 		}
 		config.Set(cfg)
@@ -87,6 +97,16 @@ var configGetCmd = &cobra.Command{
 			fmt.Println(cfg.Examples)
 		case "pos":
 			fmt.Println(cfg.POS)
+		case "ai-fallback":
+			fmt.Println(cfg.AIFallback)
+		case "ai-provider":
+			fmt.Println(cfg.AIProvider)
+		case "ai-key":
+			fmt.Println(cfg.AIKey)
+		case "ai-model":
+			fmt.Println(cfg.AIModel)
+		case "ai-base-url":
+			fmt.Println(cfg.AIBaseURL)
 		default:
 			fmt.Fprintf(os.Stderr, "unknown key %q\n", key)
 			os.Exit(1)
@@ -104,14 +124,28 @@ var configListCmd = &cobra.Command{
 		valStyle := lipgloss.NewStyle().Foreground(lipgloss.Color("86"))
 		pathStyle := lipgloss.NewStyle().Foreground(lipgloss.Color("241"))
 
+		aiKey := cfg.AIKey
+		if aiKey != "" {
+			aiKey = aiKey[:min(8, len(aiKey))] + "..."
+		}
 		rows := [][]string{
 			{"lang", cfg.Lang},
 			{"translate", fmt.Sprintf("%v", cfg.Translate)},
 			{"phonetic", fmt.Sprintf("%v", cfg.Phonetic)},
 			{"examples", fmt.Sprintf("%v", cfg.Examples)},
 			{"pos", fmt.Sprintf("%v", cfg.POS)},
+			{"", ""},
+			{"ai-fallback", fmt.Sprintf("%v", cfg.AIFallback)},
+			{"ai-provider", cfg.AIProvider},
+			{"ai-key", aiKey},
+			{"ai-model", cfg.AIModel},
+			{"ai-base-url", cfg.AIBaseURL},
 		}
 		for _, r := range rows {
+			if r[0] == "" {
+				fmt.Println()
+				continue
+			}
 			fmt.Printf("%s%s\n", keyStyle.Render(r[0]), valStyle.Render(r[1]))
 		}
 		fmt.Printf("\n%s\n", pathStyle.Render("config: "+config.Path()))

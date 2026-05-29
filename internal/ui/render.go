@@ -5,19 +5,21 @@ import (
 	"strings"
 	"time"
 
+	"github.com/NBVTien/vtdict/internal/ai"
 	"github.com/NBVTien/vtdict/internal/dictionary"
 	"github.com/NBVTien/vtdict/internal/storage"
 	"github.com/charmbracelet/lipgloss"
 )
 
 var (
-	wordStyle = lipgloss.NewStyle().Bold(true).Foreground(lipgloss.Color("86"))
+	wordStyle  = lipgloss.NewStyle().Bold(true).Foreground(lipgloss.Color("86"))
 	phoneStyle = lipgloss.NewStyle().Foreground(lipgloss.Color("241"))
 	posStyle   = lipgloss.NewStyle().Bold(true).Foreground(lipgloss.Color("214"))
 	defStyle   = lipgloss.NewStyle().Foreground(lipgloss.Color("252"))
 	exStyle    = lipgloss.NewStyle().Italic(true).Foreground(lipgloss.Color("244"))
 	transStyle = lipgloss.NewStyle().Foreground(lipgloss.Color("213"))
 	labelStyle = lipgloss.NewStyle().Foreground(lipgloss.Color("241"))
+	aiStyle    = lipgloss.NewStyle().Foreground(lipgloss.Color("99")).Italic(true)
 
 	boxStyle = lipgloss.NewStyle().
 		Border(lipgloss.RoundedBorder()).
@@ -78,6 +80,36 @@ func RenderLookup(results []dictionary.Result, translation string, opts RenderOp
 			b.WriteString("\n" + labelStyle.Render("translation  ") + transStyle.Render(translation) + "\n")
 		}
 	}
+
+	fmt.Println(boxStyle.Render(b.String()))
+}
+
+func RenderAILookup(def *ai.Definition, translation string, opts RenderOpts) {
+	var b strings.Builder
+
+	b.WriteString(wordStyle.Render(def.Word) + "\n")
+
+	if opts.POS && def.PartOfSpeech != "" {
+		b.WriteString("\n" + posStyle.Render(def.PartOfSpeech) + "\n")
+	} else {
+		b.WriteString("\n")
+	}
+
+	b.WriteString(defStyle.Render("  • "+def.Definition) + "\n")
+
+	if opts.Examples && def.Example != "" {
+		b.WriteString(exStyle.Render("    \""+def.Example+"\"") + "\n")
+	}
+
+	if len(def.Synonyms) > 0 {
+		b.WriteString("\n" + labelStyle.Render("synonyms  ") + dimStyle.Render(strings.Join(def.Synonyms, ", ")) + "\n")
+	}
+
+	if translation != "" {
+		b.WriteString("\n" + labelStyle.Render("translation  ") + transStyle.Render(translation) + "\n")
+	}
+
+	b.WriteString("\n" + aiStyle.Render("⚡ via AI"))
 
 	fmt.Println(boxStyle.Render(b.String()))
 }

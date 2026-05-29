@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/NBVTien/vtdict/internal/ai"
 	"github.com/NBVTien/vtdict/internal/config"
 	"github.com/NBVTien/vtdict/internal/dictionary"
 	"github.com/NBVTien/vtdict/internal/storage"
@@ -25,7 +26,6 @@ func init() {
 func lookupWord(word string) error {
 	cfg := config.Get()
 
-	// flag overrides config
 	doTranslate := cfg.Translate
 	if flagNoTranslate {
 		doTranslate = false
@@ -35,13 +35,36 @@ func lookupWord(word string) error {
 		lang = flagLang
 	}
 
-	results, err := dictionary.Lookup(word)
-	if err != nil {
-		fmt.Fprintf(os.Stderr, "error: %v\n", err)
+	opts := ui.RenderOpts{
+		Phonetic: cfg.Phonetic,
+		Examples: cfg.Examples,
+		POS:      cfg.POS,
+	}
+
+	results, dictErr := dictionary.Lookup(word)
+
+	// AI fallback: word not found in dictionary
+	if dictErr != nil {
+		if cfg.AIFallback {
+			def, err := ai.LookupWord(word)
+			if err != nil {
+				fmt.Fprintf(os.Stderr, "error: word not found, AI fallback failed: %v\n", err)
+				os.Exit(1)
+			}
+			translation := ""
+			if doTranslate && def.Definition != "" {
+				translation, _ = translate.Translate(def.Definition, lang)
+			}
+			ui.RenderAILookup(def, translation, opts)
+			if err := storage.Save(word, def.Definition, translation); err != nil {
+				fmt.Fprintf(os.Stderr, "warn: could not save to history: %v\n", err)
+			}
+			return nil
+		}
+		fmt.Fprintf(os.Stderr, "error: %v\n", dictErr)
 		os.Exit(1)
 	}
 
-	// API returns duplicate entries for same word — show only first
 	if len(results) > 1 {
 		results = results[:1]
 	}
@@ -54,11 +77,7 @@ func lookupWord(word string) error {
 		}
 	}
 
-	ui.RenderLookup(results, translation, ui.RenderOpts{
-		Phonetic: cfg.Phonetic,
-		Examples: cfg.Examples,
-		POS:      cfg.POS,
-	})
+	ui.RenderLookup(results, translation, opts)
 
 	firstDef := dictionary.FirstDefinition(results)
 	if err := storage.Save(word, firstDef, translation); err != nil {

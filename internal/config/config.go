@@ -15,14 +15,25 @@ type Config struct {
 	Phonetic  bool   `toml:"phonetic"`
 	Examples  bool   `toml:"examples"`
 	POS       bool   `toml:"pos"`
+
+	AIFallback bool   `toml:"ai-fallback"`
+	AIProvider string `toml:"ai-provider"` // openai | claude | ollama | groq | <any openai-compat>
+	AIKey      string `toml:"ai-key"`
+	AIModel    string `toml:"ai-model"`   // optional, uses provider default if empty
+	AIBaseURL  string `toml:"ai-base-url"` // optional, for custom endpoints
 }
 
 var defaults = Config{
-	Lang:      "vi",
-	Translate: true,
-	Phonetic:  true,
-	Examples:  true,
-	POS:       true,
+	Lang:       "vi",
+	Translate:  true,
+	Phonetic:   true,
+	Examples:   true,
+	POS:        true,
+	AIFallback: false,
+	AIProvider: "openai",
+	AIKey:      "",
+	AIModel:    "",
+	AIBaseURL:  "",
 }
 
 var configPath string
@@ -39,7 +50,7 @@ func Load() error {
 
 	data, err := os.ReadFile(path)
 	if os.IsNotExist(err) {
-		return Save() // write defaults on first run
+		return Save()
 	}
 	if err != nil {
 		return err
@@ -47,7 +58,6 @@ func Load() error {
 	_, err = toml.Decode(string(data), &current)
 	return err
 }
-
 
 func Save() error {
 	if err := os.MkdirAll(filepath.Dir(configPath), 0755); err != nil {
@@ -61,7 +71,13 @@ func Save() error {
 	buf.WriteString(fmt.Sprintf("%-12s = %v\n", "translate", current.Translate))
 	buf.WriteString(fmt.Sprintf("%-12s = %v\n", "phonetic", current.Phonetic))
 	buf.WriteString(fmt.Sprintf("%-12s = %v\n", "examples", current.Examples))
-	buf.WriteString(fmt.Sprintf("%-12s = %v\n", "pos", current.POS))
+	buf.WriteString(fmt.Sprintf("%-12s = %v\n\n", "pos", current.POS))
+	buf.WriteString("# AI fallback — used when word not found or missing examples\n")
+	buf.WriteString(fmt.Sprintf("%-12s = %v\n", "ai-fallback", current.AIFallback))
+	buf.WriteString(fmt.Sprintf("%-12s = %q\n", "ai-provider", current.AIProvider))
+	buf.WriteString(fmt.Sprintf("%-12s = %q\n", "ai-key", current.AIKey))
+	buf.WriteString(fmt.Sprintf("%-12s = %q\n", "ai-model", current.AIModel))
+	buf.WriteString(fmt.Sprintf("%-12s = %q\n", "ai-base-url", current.AIBaseURL))
 
 	return os.WriteFile(configPath, buf.Bytes(), 0644)
 }
