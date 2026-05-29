@@ -77,6 +77,11 @@ vtdict config reset               # restore defaults
 | `phonetic` | `true` | Show phonetic transcription |
 | `examples` | `true` | Show usage examples |
 | `pos` | `true` | Show part of speech |
+| `ai-fallback` | `false` | Use AI when word not found |
+| `ai-provider` | `openai` | AI provider (`openai`, `claude`, `groq`, `ollama`) |
+| `ai-key` | *(empty)* | API key (or set via env var) |
+| `ai-model` | *(empty)* | Override provider's default model |
+| `ai-base-url` | *(empty)* | Custom OpenAI-compatible endpoint |
 
 ## Config file
 
@@ -92,6 +97,38 @@ pos          = true
 ```
 
 Changes take effect on the next `vtdict` invocation. No restart needed.
+
+## AI Fallback
+
+Off by default. Triggers when a word is not found in the dictionary API. Requires your own API key.
+
+**Enable:**
+
+```bash
+vtdict config set ai-fallback true
+vtdict config set ai-provider openai   # openai | claude | groq | ollama
+vtdict config set ai-key sk-...        # or set the env var below
+```
+
+**Providers:**
+
+| Provider | `ai-provider` | Env var | Default model |
+|----------|---------------|---------|---------------|
+| OpenAI | `openai` | `OPENAI_API_KEY` | `gpt-4o-mini` |
+| Anthropic | `claude` | `ANTHROPIC_API_KEY` | `claude-haiku-4-5-20251001` |
+| Groq | `groq` | `GROQ_API_KEY` | `llama-3.1-8b-instant` |
+| Ollama (local) | `ollama` | *(none)* | `llama3.2` |
+
+Env var is used as fallback if `ai-key` is not set in the config file. Ollama requires a local server running at `localhost:11434`.
+
+**Optional overrides:**
+
+```bash
+vtdict config set ai-model gpt-4o          # override default model
+vtdict config set ai-base-url https://...  # custom OpenAI-compatible endpoint
+```
+
+Results via AI are marked with `⚡ via AI` in the output.
 
 ## Global flags
 
