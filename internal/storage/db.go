@@ -51,6 +51,22 @@ func Save(word, definition, translation string) error {
 	return err
 }
 
+func Get(word string) (*Entry, error) {
+	var e Entry
+	var ts string
+	err := db.QueryRow(`SELECT word, definition, translation, lookup_count,
+		datetime(last_looked_up, 'localtime') FROM history WHERE word = ?`, word).
+		Scan(&e.Word, &e.Definition, &e.Translation, &e.LookupCount, &ts)
+	if err == sql.ErrNoRows {
+		return nil, nil
+	}
+	if err != nil {
+		return nil, err
+	}
+	e.LastLookedUp, _ = time.Parse("2006-01-02 15:04:05", ts)
+	return &e, nil
+}
+
 func GetHistory(limit int) ([]Entry, error) {
 	rows, err := db.Query(`SELECT word, definition, translation, lookup_count,
 		datetime(last_looked_up, 'localtime') FROM history ORDER BY last_looked_up DESC LIMIT ?`, limit)

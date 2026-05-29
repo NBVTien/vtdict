@@ -114,6 +114,18 @@ func RenderAILookup(def *ai.Definition, translation string, opts RenderOpts) {
 	fmt.Println(boxStyle.Render(b.String()))
 }
 
+func RenderCached(definition, translation string, opts RenderOpts) {
+	var b strings.Builder
+
+	b.WriteString(defStyle.Render("  • "+definition) + "\n")
+
+	if translation != "" {
+		b.WriteString("\n" + labelStyle.Render("translation  ") + transStyle.Render(translation) + "\n")
+	}
+
+	fmt.Println(boxStyle.Render(b.String()))
+}
+
 func RenderHistory(entries []storage.Entry) {
 	if len(entries) == 0 {
 		fmt.Println(dimStyle.Render("No history yet. Look up a word first."))

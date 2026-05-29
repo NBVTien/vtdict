@@ -41,6 +41,15 @@ func lookupWord(word string) error {
 		POS:      cfg.POS,
 	}
 
+	// check SQLite cache first
+	if cached, err := storage.Get(word); err == nil && cached != nil {
+		if err := storage.Save(word, cached.Definition, cached.Translation); err != nil {
+			fmt.Fprintf(os.Stderr, "warn: could not update history: %v\n", err)
+		}
+		ui.RenderCached(cached.Definition, cached.Translation, opts)
+		return nil
+	}
+
 	results, dictErr := dictionary.Lookup(word)
 
 	// AI fallback: word not found in dictionary
